@@ -160,10 +160,17 @@ export default function App() {
 
   const sendData = async () => {
     try {
-      const response = Axios.post("http://192.168.0.137:9090/send/get_tensor", {
-        poses,
-        tensorAsArray,
-      });
+      const response = Axios.post(
+        "http://172.20.10.2:8000/data/frames/upload/",
+        {
+          uid: "ahmad",
+          sid: "12983129",
+          clipNum: "1",
+          sessionFinished: false,
+          poses,
+          tensorAsArray,
+        }
+      );
       // Empty Data
       poses.splice(0, poses.length);
       tensorAsArray.splice(0, tensorAsArray.length);
