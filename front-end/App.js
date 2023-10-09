@@ -12,11 +12,11 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen
+        {/* <Stack.Screen
           name="Home"
           component={HomeScreen}
           options={{ title: "SessionStart", headerShown: false }}
-        />
+        /> */}
         <Stack.Screen
           name="Second"
           component={SecondScreen}

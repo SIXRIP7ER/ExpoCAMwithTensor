@@ -33,13 +33,14 @@ export default function SecondScreen({ navigation }) {
   const cameraRef = useRef(null);
   const [tfReady, setTfReady] = useState(false);
   const [recorded, setRecorded] = useState(false);
-  const [model, setModel] = useState(null);
-  const [poses, setPoses] = useState([]);
+  const [model, setModel] = useState();
+  const [isRecording, setIsRecording] = useState(false);
   const [cameraType, setCameraType] = useState(Camera.Constants.Type.front);
   const rafId = useRef(null);
   const [fps, setFps] = useState(0);
   let lastSendTime = Date.now();
-  //const poses = [];
+  const poses = [];
+  // const [poses, setPoses] = useState([]);
   const tensorAsArray = [];
   const [activateEffect, setActivateEffect] = useState(false);
 
@@ -79,15 +80,8 @@ export default function SecondScreen({ navigation }) {
       setModel(model);
       setTfReady(true);
     }
-    if (activateEffect) {
-      prepare();
-    } else {
-      // If activateEffect is false, setModel to empty and setTfReady to false
-      setModel(null);
-      setTfReady(false);        
-    }
-  }, [activateEffect]);
-  
+    prepare();
+  }, []);
 
   /**
    * This is another useEffect hook that runs when the component is mounted.
@@ -105,22 +99,28 @@ export default function SecondScreen({ navigation }) {
         rafId.current = 0;
       }
     };
-  }, [activateEffect]);
-
+  }, []);
 
   /**
    * This toggles the activateeffect state variable
    **/
-  const handleTf = () => {
-    setActivateEffect((prevEffect) => !prevEffect);
-    
-    if (recorded == true) {
-      // Send rest of data once user has ended recording and switch to next screen
-      sendData()
-      navigation.navigate("Uploading", { language: "french "})
-    }
-    
-    setRecorded(true)
+  // const handleTf = () => {
+  //   setActivateEffect((prevEffect) => !prevEffect);
+
+  //   if (recorded == true) {
+  //     // Send rest of data once user has ended recording and switch to next screen
+  //     sendData();
+  //     navigation.navigate("Uploading", { language: "french " });
+  //   }
+
+  //   setRecorded(true);
+  // };
+
+  /**
+   * This toggles the isRecording state variable using the setIsRecording() function.
+   **/
+  const handleRecording = () => {
+    setIsRecording((prevRecording) => !prevRecording);
   };
 
   /**
@@ -141,10 +141,16 @@ export default function SecondScreen({ navigation }) {
       // KeyPoint Calculation
       const newPoses = await model.estimatePoses(tensor, undefined, Date.now());
       if (newPoses.length != 0) {
-        //poses.push(newPoses);
-        //encodeRGB(tensor);
-        setPoses(newPoses);
+        poses.push(newPoses);
+        encodeJPG(tensor);
       }
+
+      // // Check if 500 milliseconds have elapsed
+      // if (Date.now() - lastSendTime >= 1000) {
+      //   // const sendData = dataBuffer.splice(0, dataBuffer.length); // Copy the data buffer
+      //   lastSendTime = Date.now(); // Update the last send time
+      //   sendData();
+      // }
 
       // Disposes image tensoor to free memery resources after used
       tf.dispose([tensor]);
@@ -161,9 +167,7 @@ export default function SecondScreen({ navigation }) {
     };
     loop();
   };
-  const handleOffCameraStream = async (images) => {
-    
-  };
+  // const handleOffCameraStream = async (images) => {};
 
   const renderFps = () => {
     return (
@@ -173,13 +177,19 @@ export default function SecondScreen({ navigation }) {
     );
   };
 
-  
   const sendData = async () => {
     try {
-      const response = Axios.post("http://192.168.0.137:9090/send/get_tensor", {
-        poses,
-        tensorAsArray,
-      });
+      const response = Axios.post(
+        "http://192.168.0.137:8000/data/frames/upload/",
+        {
+          uid: "ahmad",
+          sid: "12983129",
+          clipNum: "1",
+          sessionFinished: false,
+          poses,
+          tensorAsArray,
+        }
+      );
       // Empty Data
       poses.splice(0, poses.length);
       tensorAsArray.splice(0, tensorAsArray.length);
@@ -201,8 +211,12 @@ export default function SecondScreen({ navigation }) {
     const jpegImageData = jpeg.encode(rawImageData, 100);
     const base64jpeg = tf.util.decodeString(jpegImageData.data, "base64");
     tensorAsArray.push(base64jpeg);
+    // Send 15 frames per request
+    if (tensorAsArray.length == 15) {
+      sendData();
+    }
   };
-  
+
   const encodeRGB = async (tensor) => {
     const data = tensor.arraySync();
     tensorAsArray.push(data);
@@ -212,6 +226,10 @@ export default function SecondScreen({ navigation }) {
     }
   };
 
+  // const encodeRGB = async (tensor) => {
+  //   const data = tensor.arraySync();
+  //   tensorAsArray.push(data);
+  // };
 
   const renderPose = () => {
     if (poses != null && poses.length > 0) {
@@ -230,7 +248,7 @@ export default function SecondScreen({ navigation }) {
 
   const renderRecordButton = () => {
     return (
-      <View style={styles.recordButton} onTouchEnd={handleTf}>
+      <View style={styles.recordButton} onTouchEnd={handleRecording}>
         {tfReady ? (
           <Image
             source={require("./assets/button2.png")}
@@ -245,6 +263,7 @@ export default function SecondScreen({ navigation }) {
       </View>
     );
   };
+
   const renderSwitchCamButton = () => {
     return (
       <View style={styles.SwitchButton} onTouchEnd={handleSwitchCameraType}>
@@ -255,30 +274,8 @@ export default function SecondScreen({ navigation }) {
 
   if (!tfReady) {
     return (
-      <View style={styles.container}>
-        <View style={styles.top}></View>
-        <TensorCamera
-          ref={cameraRef}
-          style={styles.camera}
-          autorender={true}
-          type={cameraType}
-          // tensor related props
-          resizeWidth={OUTPUT_TENSOR_WIDTH}
-          resizeHeight={OUTPUT_TENSOR_HEIGHT}
-          resizeDepth={3}
-          onReady={handleOffCameraStream}
-        />
-        {/*renderPose()*/}
-        {/*renderFps()*/}
-        <View style={styles.bottom}>
-          <View style={{flex: 1}}></View>
-          <View style={styles.recordcontain}>
-            {renderRecordButton()}
-          </View>
-          <View style={styles.switchcontain}>
-            {renderSwitchCamButton()}
-          </View>
-        </View>
+      <View style={styles.loadingMsg}>
+        <Text>Loading...</Text>
       </View>
     );
   } else {
@@ -297,18 +294,13 @@ export default function SecondScreen({ navigation }) {
           onReady={handleCameraStream}
         />
         {/*renderPose()*/}
-        {/*renderFps()*/}
+        {renderFps()}
         <View style={styles.bottom}>
-          <View style={{flex: 1}}></View>
-          <View style={styles.recordcontain}>
-            {renderRecordButton()}
-          </View>
-          <View style={styles.switchcontain}>
-            {renderSwitchCamButton()}
-          </View>
+          <View style={{ flex: 1 }}></View>
+          <View style={styles.recordcontain}>{renderRecordButton()}</View>
+          <View style={styles.switchcontain}>{renderSwitchCamButton()}</View>
         </View>
       </View>
-      
     );
   }
 }
@@ -316,17 +308,17 @@ export default function SecondScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'column',
+    flexDirection: "column",
   },
-  top:{
+  top: {
     flex: 1,
     width: "100%",
     height: "100%",
     backgroundColor: "#423B3B",
   },
-  bottom:{
+  bottom: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     justifyContent: "space-evenly",
     width: "100%",
     height: "100%",
@@ -344,7 +336,6 @@ const styles = StyleSheet.create({
   recordButton: {
     alignSelf: "center",
     bottom: 5,
-
   },
   recordImage: {
     width: 60,
