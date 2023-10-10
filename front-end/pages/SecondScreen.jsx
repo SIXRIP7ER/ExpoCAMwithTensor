@@ -26,7 +26,7 @@ const TensorCamera = cameraWithTensors(Camera);
 const IS_IOS = Platform.OS === "ios";
 
 // The size of the resized output from TensorCamera.
-const OUTPUT_TENSOR_WIDTH = 120;
+const OUTPUT_TENSOR_WIDTH = 180;
 const OUTPUT_TENSOR_HEIGHT = OUTPUT_TENSOR_WIDTH / (IS_IOS ? 9 / 16 : 3 / 4);
 
 export default function SecondScreen({ navigation }) {

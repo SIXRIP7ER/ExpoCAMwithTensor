@@ -56,10 +56,10 @@ def generate_tensor(tensorAsArray, poses):
     #     img.save('my-image.jpeg')
         # img.show()
 
-    # # Display JPG image
-    # img = Image.open(io.BytesIO(base64.decodebytes(bytes(tensorAsArray[0], "utf-8"))))
-    # img.save('my-image.jpeg')
-    # # img.show()
+    # Display JPG image
+    img = Image.open(io.BytesIO(base64.decodebytes(bytes(tensorAsArray[0], "utf-8"))))
+    img.save('my-image.jpeg')
+    # img.show()
 
     # # Display RGB image
     # data = np.array(tensorAsArray[0], dtype=np.uint8)
