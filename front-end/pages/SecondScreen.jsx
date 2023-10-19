@@ -210,7 +210,28 @@ export default function SecondScreen({ navigation }) {
     );
   };
 
-  
+  const sendLastData = async () => {
+    try {
+      const response = Axios.post(
+        "http://192.168.0.137:8000/data/frames/upload/",
+        {
+          uid: "ahmad",
+          sid: "12983129",
+          clipNum: "1",
+          sessionFinished: true,
+          poses,
+          tensorAsArray,
+        }
+      );
+      // Empty Data
+      poses.splice(0, poses.length);
+      tensorAsArray.splice(0, tensorAsArray.length);
+      console.log("sending last data:");
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const sendData = async () => {
     try {
       const response = Axios.post(
