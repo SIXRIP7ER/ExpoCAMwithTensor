@@ -86,10 +86,9 @@ export default function SecondScreen({ navigation }) {
     } else {
       // If activateEffect is false, setModel to empty and setTfReady to false
       setModel(null);
-      setTfReady(false);        
+      setTfReady(false);
     }
   }, [activateEffect]);
-  
 
   /**
    * This is another useEffect hook that runs when the component is mounted.
@@ -129,23 +128,24 @@ export default function SecondScreen({ navigation }) {
     const minutes = Math.floor((timeInSeconds % 3600) / 60);
     const seconds = timeInSeconds % 60;
 
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   };
-
 
   /**
    * This toggles the activateeffect state variable
    **/
   const handleTf = () => {
     setActivateEffect((prevEffect) => !prevEffect);
-    
+
     if (recorded == true) {
       // Send rest of data once user has ended recording and switch to next screen
-      sendData()
-      navigation.navigate("Uploading", { language: "french "})
+      sendLastData();
+      navigation.navigate("Uploading", { language: "french " });
     }
-    
-    setRecorded(true)
+
+    setRecorded(true);
   };
 
   /**
@@ -154,7 +154,6 @@ export default function SecondScreen({ navigation }) {
    **/
   const handleCameraStream = async (images) => {
     const loop = async () => {
-     
       // This marks the starting time of the image processing for measuring latency.
       const startTs = Date.now();
 
@@ -168,7 +167,8 @@ export default function SecondScreen({ navigation }) {
       const newPoses = await model.estimatePoses(tensor, undefined, Date.now());
       if (newPoses.length != 0) {
         poses.push(newPoses);
-        encodeRGB(tensor);
+        encodeJPG(tensor);
+        // encodeRGB(tensor);
         //setPoses(newPoses);
       }
 
@@ -213,13 +213,21 @@ export default function SecondScreen({ navigation }) {
   
   const sendData = async () => {
     try {
-      const response = Axios.post("http://192.168.0.137:9090/send/get_tensor", {
-        poses,
-        tensorAsArray,
-      });
+      const response = Axios.post(
+        "http://192.168.0.137:8000/data/frames/upload/",
+        {
+          uid: "ahmad",
+          sid: "12983129",
+          clipNum: "1",
+          sessionFinished: false,
+          poses,
+          tensorAsArray,
+        }
+      );
       // Empty Data
       poses.splice(0, poses.length);
       tensorAsArray.splice(0, tensorAsArray.length);
+      console.log("sending data:");
     } catch (err) {
       console.log(err);
     }
@@ -238,18 +246,21 @@ export default function SecondScreen({ navigation }) {
     const jpegImageData = jpeg.encode(rawImageData, 100);
     const base64jpeg = tf.util.decodeString(jpegImageData.data, "base64");
     tensorAsArray.push(base64jpeg);
+    if (tensorAsArray.length == 15) {
+      sendData();
+      // console.log("sending data");
+    }
   };
-  
+
   const encodeRGB = async (tensor) => {
     const data = tensor.arraySync();
     tensorAsArray.push(data);
     // Send 15 frames per request
     if (tensorAsArray.length == 15) {
       sendData();
-      console.log("sending data")
+      // console.log("sending data");
     }
   };
-
 
   const renderPose = () => {
     if (poses != null && poses.length > 0) {
@@ -269,9 +280,9 @@ export default function SecondScreen({ navigation }) {
   const renderRecordButton = () => {
     return (
       <View style={styles.recordButton}>
-      <TouchableOpacity style={styles.recordB} onPress={handleTf}>
-        <View style={[styles.inner, tfReady && styles.activeInner ]}></View>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.recordB} onPress={handleTf}>
+          <View style={[styles.inner, tfReady && styles.activeInner]}></View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -288,14 +299,14 @@ export default function SecondScreen({ navigation }) {
     return (
       <View style={styles.timercontain}>
         {tfReady ? (
-        <View style={styles.activeTimer}>
-          <Text style={styles.timerText}>{formatTime(timer)}</Text>
-        </View>
-      ) : (
-        <View style={styles.notactiveTimer}>
-          <Text style={styles.timerText}>{formatTime(timer)}</Text>
-        </View>
-      )}
+          <View style={styles.activeTimer}>
+            <Text style={styles.timerText}>{formatTime(timer)}</Text>
+          </View>
+        ) : (
+          <View style={styles.notactiveTimer}>
+            <Text style={styles.timerText}>{formatTime(timer)}</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -310,19 +321,11 @@ export default function SecondScreen({ navigation }) {
           </View>
           <View style={{flex: 1}}></View>
         </View>
-        <Camera
-          ref={cameraRef}
-          style={styles.camera}
-          type={cameraType}
-        />
+        <Camera ref={cameraRef} style={styles.camera} type={cameraType} />
         <View style={styles.bottom}>
-          <View style={{flex: 1}}></View>
-          <View style={styles.recordcontain}>
-            {renderRecordButton()}
-          </View>
-          <View style={styles.switchcontain}>
-            {renderSwitchCamButton()}
-          </View>
+          <View style={{ flex: 1 }}></View>
+          <View style={styles.recordcontain}>{renderRecordButton()}</View>
+          <View style={styles.switchcontain}>{renderSwitchCamButton()}</View>
         </View>
       </View>
     );
@@ -330,11 +333,9 @@ export default function SecondScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <View style={styles.top}>
-          <View style={{flex: 1}}></View>
-          <View style={styles.timercontain}>
-            {rendertimer()}
-          </View>
-          <View style={{flex: 1}}></View>
+          <View style={{ flex: 1 }}></View>
+          <View style={styles.timercontain}>{rendertimer()}</View>
+          <View style={{ flex: 1 }}></View>
         </View>
         <TensorCamera
           ref={cameraRef}
@@ -350,16 +351,11 @@ export default function SecondScreen({ navigation }) {
         {/*renderPose()*/}
         {renderFps()}
         <View style={styles.bottom}>
-          <View style={{flex: 1}}></View>
-          <View style={styles.recordcontain}>
-            {renderRecordButton()}
-          </View>
-          <View style={styles.switchcontain}>
-            {renderSwitchCamButton()}
-          </View>
+          <View style={{ flex: 1 }}></View>
+          <View style={styles.recordcontain}>{renderRecordButton()}</View>
+          <View style={styles.switchcontain}>{renderSwitchCamButton()}</View>
         </View>
       </View>
-      
     );
   }
 }
@@ -367,19 +363,19 @@ export default function SecondScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'column',
+    flexDirection: "column",
   },
-  top:{
+  top: {
     flex: 1,
     width: "100%",
     height: "100%",
     backgroundColor: "#423B3B",
-    flexDirection: 'row',
+    flexDirection: "row",
     justifyContent: "space-evenly",
   },
-  bottom:{
+  bottom: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     justifyContent: "space-evenly",
     width: "100%",
     height: "100%",
@@ -415,12 +411,12 @@ const styles = StyleSheet.create({
     top: 5,
     fontSize: 20,
     marginBottom: 16,
-    color: "white"
+    color: "white",
   },
   activeTimer: {
     top: 20,
-    backgroundColor: 'red',
-    alignItems: 'center',
+    backgroundColor: "red",
+    alignItems: "center",
     borderRadius: 5,
     width: 100,
     height: 35,
@@ -428,11 +424,10 @@ const styles = StyleSheet.create({
   },
   notactiveTimer: {
     top: 20,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 5,
     width: 120,
     height: 50,
-
   },
   recordcontain: {
     flex: 1,
@@ -445,26 +440,26 @@ const styles = StyleSheet.create({
   recordB: {
     width: 60,
     height: 60,
-    borderColor: 'white',
+    borderColor: "white",
     borderWidth: 5,
     borderRadius: 50,
   },
   inner: {
-    backgroundColor: '#9e1919',
-    width: '100%',
-    height: '100%',
-    borderRadius: '50%',
-    transitionProperty: 'all',
+    backgroundColor: "#9e1919",
+    width: "100%",
+    height: "100%",
+    borderRadius: "50%",
+    transitionProperty: "all",
     transitionDuration: 200,
-    transitionTimingFunction: 'ease',
+    transitionTimingFunction: "ease",
     transform: [{ scale: 0.94 }],
   },
   activeInner: {
-    backgroundColor: '#9e1919',
-    width: '100%',
-    height: '100%',
+    backgroundColor: "#9e1919",
+    width: "100%",
+    height: "100%",
     transform: [{ scale: 0.5 }],
-    borderRadius: '12%',
+    borderRadius: "12%",
   },
   fpsContainer: {
     position: "absolute",
