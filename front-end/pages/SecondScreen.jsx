@@ -196,6 +196,20 @@ export default function SecondScreen({ navigation }) {
     );
   };
 
+  const renderExitButton = () => {
+    return (
+      <View style={styles.ExitButton} onTouchEnd={() =>
+        navigation.navigate("Home", { language: "french" })
+      }>
+        <Image
+          source={require('./assets/exitB.png')}
+          style={styles.ExitImage}
+        />
+      </View>
+      
+    );
+  };
+
   
   const sendData = async () => {
     try {
@@ -290,7 +304,7 @@ export default function SecondScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <View style={styles.top}>
-          <View style={{flex: 1}}></View>
+          {renderExitButton()}
           <View style={styles.timercontain}>
             {rendertimer()}
           </View>
@@ -324,7 +338,7 @@ export default function SecondScreen({ navigation }) {
         </View>
         <TensorCamera
           ref={cameraRef}
-          style={styles.camera}
+          style={styles.tcamera}
           autorender={true}
           type={cameraType}
           // tensor related props
@@ -376,14 +390,30 @@ const styles = StyleSheet.create({
     height: "100%",
     flex: 6,
   },
+  tcamera: {
+    width: "100%",
+    height: "100%",
+    flex: 8,
+  },
+  ExitButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  ExitImage: {
+    width: 40,
+    height: 40,
+    right: 40,
+    top: 10,
+  },
   timercontain: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
   timerText: {
-    top: 10,
-    fontSize: 24,
+    top: 5,
+    fontSize: 20,
     marginBottom: 16,
     color: "white"
   },
@@ -392,8 +422,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
     alignItems: 'center',
     borderRadius: 5,
-    width: 120,
-    height: 50,
+    width: 100,
+    height: 35,
 
   },
   notactiveTimer: {
